@@ -1,0 +1,1 @@
+{"short_name":"מוסך נהגים","name":"מוסך – ניהול נהגים","start_url":".","display":"standalone","theme_color":"#0F172A","background_color":"#0F172A","orientation":"portrait","icons":[{"src":"favicon.ico","sizes":"64x64","type":"image/x-icon"}]}
