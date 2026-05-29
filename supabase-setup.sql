@@ -1,78 +1,34 @@
--- =============================================
--- GARAGE DRIVERS V2 - עדכון מסד נתונים
--- הרץ את זה ב-SQL Editor של Supabase
--- =============================================
+import { createClient } from '@supabase/supabase-js';
 
--- מחק טבלאות קיימות אם יש
-DROP TABLE IF EXISTS tasks CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS garage_cars CASCADE;
+const SUPABASE_URL = 'https://krmvaulqmaahmmtjiuxb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_j2BKRvq0-9gM1pcpmASgdw_zK8yBp0o';
 
--- טבלת משתמשים
-CREATE TABLE users (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('driver', 'sender')),
-  is_backup BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
--- טבלת רכבי מוסך
-CREATE TABLE garage_cars (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  plate TEXT NOT NULL UNIQUE,
-  status TEXT DEFAULT 'in_garage' CHECK (status IN ('in_garage', 'in_use', 'parked_outside')),
-  parked_address TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+export const TASK_TYPES = {
+  ride:          { label: 'הסעת לקוח',         icon: '🚶' },
+  lexus:         { label: 'לקסוס',              icon: '🔄' },
+  transfer_city: { label: 'שינוע – עיר',        icon: '🏙️' },
+  transfer_out:  { label: 'שינוע – מחוץ לעיר', icon: '🛣️' },
+  small:         { label: 'משימה קטנה',         icon: '📦' },
+};
 
--- טבלת משימות
-CREATE TABLE tasks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  type TEXT NOT NULL CHECK (type IN ('ride', 'lexus', 'transfer_city', 'transfer_out', 'small')),
-  status TEXT DEFAULT 'waiting' CHECK (status IN ('waiting', 'active', 'arrived', 'done')),
+export const STATUS = {
+  waiting:  { label: 'ממתינה',    color: '#6B7280', bg: 'rgba(107,114,128,0.15)' },
+  active:   { label: 'בביצוע',   color: '#F59E0B', bg: 'rgba(245,158,11,0.15)'  },
+  arrived:  { label: 'הגיע ליעד',color: '#3B82F6', bg: 'rgba(59,130,246,0.15)'  },
+  done:     { label: 'הושלם',    color: '#10B981', bg: 'rgba(16,185,129,0.15)'  },
+};
 
-  -- מי פתח
-  sender_id UUID REFERENCES users(id),
+export const formatTime = (ts) => {
+  if (!ts) return null;
+  return new Date(ts).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+};
 
-  -- מי לוקח (נהג ראשי)
-  driver_id UUID REFERENCES users(id),
-  driver2_id UUID REFERENCES users(id),
-
-  -- פרטי משימה
-  client_name TEXT,
-  client_address TEXT,
-  car_plate TEXT,
-  car_plate2 TEXT,
-  parked_address TEXT,
-  lexus_direction TEXT CHECK (lexus_direction IN ('from_lexus', 'to_lexus')),
-  small_description TEXT,
-
-  -- זמנים
-  opened_at TIMESTAMPTZ DEFAULT NOW(),
-  taken_at TIMESTAMPTZ,
-  arrived_at TIMESTAMPTZ,
-  done_at TIMESTAMPTZ,
-
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- נהגים ראשוניים
-INSERT INTO users (name, role, is_backup) VALUES
-  ('פליקס', 'driver', false),
-  ('מייקל', 'driver', false),
-  ('אורי',  'driver', true);
-
--- Real-time
-ALTER TABLE tasks REPLICA IDENTITY FULL;
-ALTER TABLE users REPLICA IDENTITY FULL;
-ALTER TABLE garage_cars REPLICA IDENTITY FULL;
-
--- הרשאות
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE garage_cars ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "allow_all" ON users FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all" ON tasks FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all" ON garage_cars FOR ALL USING (true) WITH CHECK (true);
+export const timeDiff = (from, to) => {
+  if (!from || !to) return null;
+  const diff = Math.round((new Date(to) - new Date(from)) / 60000);
+  if (diff < 60) return `${diff} דק׳`;
+  const h = Math.floor(diff / 60), m = diff % 60;
+  return m > 0 ? `${h}ש׳ ${m}דק׳` : `${h}ש׳`;
+};
